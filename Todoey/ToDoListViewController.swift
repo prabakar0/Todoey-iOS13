@@ -9,10 +9,18 @@
 import UIKit
 
 class ToDoListViewController: UITableViewController {
-var items = ["Buy coke","Buy meth","Binge BB"]
+var itemArr = [Stuff]()
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+           
+        
     override func viewDidLoad() {
         super.viewDidLoad()
+//if let items = defaults.array(forKey: "ToDoListArray") as? [String]{
+  //          itemArr = items
         
+    //    }
+        
+       loadItems()
     }
 
 
@@ -20,23 +28,30 @@ var items = ["Buy coke","Buy meth","Binge BB"]
 
 //MARK: - UITableViewControllerDataSource
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return items.count
+        return itemArr.count
         
     }
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-        cell.textLabel?.text = items[indexPath.row]
         
+        
+        cell.textLabel?.text = itemArr[indexPath.row].task_name
+        
+        cell.accessoryType = itemArr[indexPath.row].Status ? .checkmark : .none
+        if itemArr[indexPath.row].Status == false{
+            cell.accessoryType = .none
+        }
+        else{
+            cell.accessoryType = .checkmark
+        }
         return cell
     
     
     }
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        itemArr[indexPath.row].Status = !itemArr[indexPath.row].Status
+           saveItems()
         
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark{tableView.cellForRow(at: indexPath)?.accessoryType = .none}
-        else{
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -44,11 +59,14 @@ var items = ["Buy coke","Buy meth","Binge BB"]
         var textField = UITextField()
         let alert = UIAlertController(title: "Add new ToDoey item", message: "", preferredStyle: .alert)
         let action  = UIAlertAction(title: "Add Item", style: .default) { (action) in
-            if let x = textField.text{
-                self.items.append(x)
-                self.tableView.reloadData()
-            }
+            let x = Stuff()
+            x.task_name = textField.text!
+            if x.task_name != ""{
+                self.itemArr.append(x)
+                self.saveItems()
+                
             
+            }
         }
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create new Item"
@@ -59,5 +77,31 @@ var items = ["Buy coke","Buy meth","Binge BB"]
     
     }
     
-}
 
+
+func saveItems(){
+    let encoder = PropertyListEncoder()
+        do {
+            let Data = try encoder.encode(itemArr)
+            try Data.write(to: dataFilePath!)
+        } catch  {
+        print("error while encoding")
+        }
+        
+        tableView.reloadData()
+        }
+    
+    
+    
+    func loadItems(){
+        if let data = try?Data(contentsOf: dataFilePath!){
+            let decoder = PropertyListDecoder()
+            do{
+                itemArr = try decoder.decode([Stuff].self, from: data)
+                
+            }catch{
+                print("\(error)")
+            }
+        }
+    }
+}
